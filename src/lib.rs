@@ -263,7 +263,7 @@ impl<T> Chain<T> {
 /// descriptions).
 pub enum AddEdges {
     /// Allows the start (first [`Chain::depth`] items) of the provided
-    /// iterator to be returned by a call to [`Chain::get_start`] (or increase
+    /// iterator to be returned by a call to [`Chain::get_start`] (or increases
     /// the chance of this happening).
     ///
     /// Specifically, this increases the chance that a sequence of [`None`]s
@@ -327,7 +327,7 @@ impl<T: Item> Chain<T> {
     ///
     /// The first <code>[self.depth()](Self::depth) + 1</code> items are added,
     /// increasing the chance that the first [`self.depth()`](Self::depth)
-    /// items will followed by the remaining item.
+    /// items will be followed by the remaining item.
     ///
     /// If [`items.into_iter()`](IntoIterator::into_iter) yields fewer than
     /// [`self.depth()`] items, this function is a no-op. If it yields exactly
