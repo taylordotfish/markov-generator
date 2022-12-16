@@ -187,8 +187,7 @@ macro_rules! define_chain_struct {
     ) => {
         #[cfg_attr(
             feature = "serde",
-            derive(Serialize, Deserialize),
-            serde(bound(serialize = "T: Item + Serialize")),
+            derive(Deserialize),
             serde(bound(deserialize = "T: Item + Deserialize<'de>")),
         )]
         $(#[$attrs])*
@@ -206,7 +205,12 @@ define_chain_struct! {
 }
 
 define_chain_struct! {
-    #[cfg_attr(feature = "serde", serde(from = "SerializableChain<T>"))]
+    #[cfg_attr(
+        feature = "serde",
+        derive(Serialize),
+        serde(bound(serialize = "T: Item + Serialize")),
+        serde(from = "SerializableChain<T>"),
+    )]
     /// A Markov chain.
     ///
     /// This type implements [`Serialize`] and [`Deserialize`] when the
@@ -263,8 +267,8 @@ impl<T> Chain<T> {
 /// descriptions).
 pub enum AddEdges {
     /// Allows the start (first [`Chain::depth`] items) of the provided
-    /// iterator to be returned by a call to [`Chain::get_start`] (or increases
-    /// the chance of this happening).
+    /// iterator to be returned by a call to [`Chain::get_start`] (or
+    /// increases the chance of this happening).
     ///
     /// Specifically, this increases the chance that a sequence of [`None`]s
     /// could be followed by those starting items in the provided iterator.
@@ -277,7 +281,7 @@ pub enum AddEdges {
     /// Performs the behavior of both [`Self::Start`] and [`Self::End`].
     Both,
 
-    /// Does not perform the behavior of [`Self::Start`] or [`Self::End`].
+    /// Performs neither the behavior of [`Self::Start`] nor [`Self::End`].
     Neither,
 }
 
@@ -295,7 +299,7 @@ impl<T: Item> Chain<T> {
     /// Adds all items in an iterator to the chain.
     ///
     /// This essentially calls [`Self::add_next`] on every overlapping window
-    /// of [`self.depth() + 1`](Self::depth) elements.
+    /// of <code>[self.depth()](Self::depth) + 1</code> elements.
     ///
     /// `edges` controls whether the start or end of `items` can be used as
     /// start or end data for the chain. See the documentation for [`AddEdges`]
@@ -312,13 +316,13 @@ impl<T: Item> Chain<T> {
         for item in items {
             buf.push_back(Some(item));
             if edges.has_start() || buf[0].is_some() {
-                self.add(buf.iter().cloned());
+                self.add_unchecked(buf.iter().cloned());
             }
             buf.pop_front();
         }
 
         if edges.has_end() {
-            self.add(buf.drain(..));
+            self.add_unchecked(buf.drain(..));
         }
         self.buf = buf;
     }
@@ -335,17 +339,21 @@ impl<T: Item> Chain<T> {
     ///
     /// [`self.depth()`]: Self::depth
     pub fn add<I: IntoIterator<Item = Option<T>>>(&mut self, items: I) {
+        let mut buf = mem::take(&mut self.buf);
+        buf.clear();
+        buf.extend(items.into_iter().take(self.depth + 1));
+        if self.buf.len() >= self.depth {
+            self.add_unchecked(buf.drain(..));
+        }
+        self.buf = buf;
+    }
+
+    /// Like [`Self::add`], but doesn't check the length of `items`.
+    fn add_unchecked<I: IntoIterator<Item = Option<T>>>(&mut self, items: I) {
         let mut iter = items.into_iter();
         let mut node = &mut self.root;
 
-        self.buf.clear();
-        self.buf.extend(iter.by_ref().take(self.depth));
-
-        if self.buf.len() != self.depth {
-            return;
-        }
-
-        for (i, item) in self.buf.drain(..).enumerate() {
+        for (i, item) in iter.by_ref().take(self.depth).enumerate() {
             let internal = if let Node::Internal(internal) = node {
                 internal
             } else {

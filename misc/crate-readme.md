@@ -66,8 +66,8 @@ Crate features
 * `serde` (default: enabled): Implement [Serde]'s [`Serialize`] and
   [`Deserialize`] traits for [`Chain`].
 
-[`Chain`]: https://docs.rs/markov-generator/latest/markov_generator/struct.Chain.html
-[Serde]: https://docs.rs/serde/latest/serde/
-[`Serialize`]: https://docs.rs/serde/latest/serde/trait.Serialize.html
-[`Deserialize`]: https://docs.rs/serde/latest/serde/trait.Deserialize.html
+[`Chain`]: https://docs.rs/markov-generator/0.1/markov_generator/struct.Chain.html
+[Serde]: https://docs.rs/serde/1.0/serde/
+[`Serialize`]: https://docs.rs/serde/1.0/serde/trait.Serialize.html
+[`Deserialize`]: https://docs.rs/serde/1.0/serde/trait.Deserialize.html
 [`std`]: https://doc.rust-lang.org/stable/std/
