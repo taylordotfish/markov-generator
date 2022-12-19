@@ -18,7 +18,7 @@
  */
 
 #![forbid(unsafe_code)]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(feature = "std", doc)), no_std)]
 #![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
 
 //! A highly customizable Rust library for building [Markov chains] and
@@ -88,8 +88,17 @@
 //!   will be used instead. This feature requires `std`.
 //! * `serde` (default: enabled): Implement [Serde]'s [`Serialize`] and
 //!   [`Deserialize`] traits for [`Chain`].
-//!
-//! [Serde]: serde
+
+#![doc = "\n"]
+#![cfg_attr(feature = "serde", doc = "[Serde]: serde")]
+#![cfg_attr(
+    not(feature = "serde"),
+    doc = "
+[Serde]: https://docs.rs/serde/1.0/serde/
+[`Serialize`]: https://docs.rs/serde/1.0/serde/trait.Serialize.html
+[`Deserialize`]: https://docs.rs/serde/1.0/serde/trait.Deserialize.html
+"
+)]
 
 extern crate alloc;
 
