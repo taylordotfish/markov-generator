@@ -128,6 +128,13 @@ type Map<K, V> = alloc::collections::BTreeMap<K, V>;
 pub trait Item: Eq + std::hash::Hash {}
 
 #[cfg(not(feature = "hash"))]
+/// An alias of the traits that `T` must implement for [`Chain<T>`].
+///
+/// There is no need to implement this trait manually; it has a blanket
+/// implementation.
+///
+/// If the `hash` feature is enabled, this trait will be an alias of
+/// <code>[Eq] + [Hash](std::hash::Hash)</code> instead of [`Ord`].
 pub trait Item: Ord {}
 
 #[cfg(feature = "hash")]
@@ -315,19 +322,26 @@ impl<T: Item> Chain<T> {
     /// for more information.
     pub fn add_all<I>(&mut self, items: I, edges: AddEdges)
     where
-        I: Iterator<Item = T>,
+        I: IntoIterator<Item = T>,
         T: Clone,
     {
         let mut buf = mem::take(&mut self.buf);
         buf.clear();
         buf.resize(self.depth, None);
 
-        for item in items {
+        let mut iter = items.into_iter();
+        let mut next = iter.next();
+
+        while let Some(item) = next {
             buf.push_back(Some(item));
-            if edges.has_start() || buf[0].is_some() {
+            next = iter.next();
+            if !edges.has_start() && buf[0].is_none() {
+                // Do nothing
+            } else if edges == AddEdges::Start && next.is_none() {
+                self.add_unchecked(buf.drain(..));
+            } else {
                 self.add_unchecked(buf.iter().cloned());
             }
-            buf.pop_front();
         }
 
         if edges.has_end() {
@@ -411,14 +425,30 @@ impl<T: Item> Chain<T> {
     /// [`Self::add_next`] or [`Self::add`] must be called.
     ///
     /// [`self.depth()`]: Self::depth
+    ///
+    /// If this function's trait bounds (<code>[I::IntoIter]: [Clone]</code>)
+    /// are a problem, you can use [`Self::add_all`] instead if `T` is
+    /// [`Clone`]:
+    ///
+    /// [I::IntoIter]: IntoIterator::IntoIter
+    ///
+    /// ```
+    /// # use markov_generator::{AddEdges, Chain};
+    /// # let mut chain = Chain::new(3);
+    /// # let items = [1, 2, 3, 4];
+    /// chain.add_all(items.into_iter().take(chain.depth()), AddEdges::Start);
+    /// ```
     pub fn add_start<I>(&mut self, items: I)
     where
         I: IntoIterator<Item = T>,
         I::IntoIter: Clone,
     {
         let iter = items.into_iter().map(Some);
-        for i in (1..=self.depth).rev() {
+        for i in (2..self.depth).rev() {
             self.add(iter::repeat_with(|| None).take(i).chain(iter.clone()));
+        }
+        if self.depth > 0 {
+            self.add(iter::once(None).chain(iter));
         }
     }
 
@@ -427,7 +457,7 @@ impl<T: Item> Chain<T> {
     ///
     /// Note that this function alone does not increase the chance that
     /// `items` will be returned by [`Self::get_start`]; [`Self::add_start`]
-    /// (or manually passing `None`-prefixed sequences to [`Self::add`]) must
+    /// (or manually passing [`None`]-prefixed sequences to [`Self::add`]) must
     /// be used.
     pub fn add_next<I: IntoIterator<Item = T>>(&mut self, items: I) {
         self.add(items.into_iter().map(Some));
@@ -521,6 +551,9 @@ impl<T: Item> Chain<T> {
     #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
     /// Gets some initial items that have appeared at the start of a sequence
     /// (see [`Self::add_start`]).
+    ///
+    /// The returned iterator will yield up to [`self.depth()`](Self::depth)
+    /// items.
     pub fn get_start(&self) -> impl Iterator<Item = &T> {
         self.get_start_with_rng(rand::thread_rng())
     }
@@ -593,7 +626,7 @@ impl<'a, T, R> Generator<'a, T, R> {
     /// Gets the generator's state.
     ///
     /// This is a sequence of exactly [`self.chain.depth()`](Chain::depth)
-    /// items. [`Self::next()`] will pass the state to [`Chain::get`] and then
+    /// items. [`Self::next`] will pass the state to [`Chain::get`] and then
     /// update the state accordingly by popping the front item and pushing the
     /// result of [`Chain::get`] to the back.
     ///
