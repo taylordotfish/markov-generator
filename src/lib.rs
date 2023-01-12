@@ -17,6 +17,7 @@
  * along with markov-generator. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#![warn(missing_docs)]
 #![forbid(unsafe_code)]
 #![cfg_attr(not(any(feature = "std", doc)), no_std)]
 #![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
@@ -26,7 +27,7 @@
 //!
 //! [Markov chains]: https://en.wikipedia.org/wiki/Markov_chain
 //!
-//! [`Chain`] implements [Serde]'s [`Serialize`] and [`Deserialize`] traits, so
+//! [`Chain`] implements [Serde]’s [`Serialize`] and [`Deserialize`] traits, so
 //! you can use a chain multiple times without having to regenerate it every
 //! time (which can be a lengthy process).
 //!
@@ -86,7 +87,7 @@
 //!   `no_std`.
 //! * `hash` (default: enabled): Use hash maps internally. If disabled, B-trees
 //!   will be used instead. This feature requires `std`.
-//! * `serde` (default: enabled): Implement [Serde]'s [`Serialize`] and
+//! * `serde` (default: enabled): Implement [Serde]’s [`Serialize`] and
 //!   [`Deserialize`] traits for [`Chain`].
 
 #![doc = "\n"]

@@ -6,7 +6,7 @@ generating sequences of data from them.
 
 [Markov chains]: https://en.wikipedia.org/wiki/Markov_chain
 
-[`Chain`] implements [Serde]'s [`Serialize`] and [`Deserialize`] traits, so
+[`Chain`] implements [Serde]’s [`Serialize`] and [`Deserialize`] traits, so
 you can use a chain multiple times without having to regenerate it every
 time (which can be a lengthy process).
 
@@ -63,7 +63,7 @@ Crate features
   `no_std`.
 * `hash` (default: enabled): Use hash maps internally. If disabled, B-trees
   will be used instead. This feature requires `std`.
-* `serde` (default: enabled): Implement [Serde]'s [`Serialize`] and
+* `serde` (default: enabled): Implement [Serde]’s [`Serialize`] and
   [`Deserialize`] traits for [`Chain`].
 
 [`Chain`]: https://docs.rs/markov-generator/0.1/markov_generator/struct.Chain.html
