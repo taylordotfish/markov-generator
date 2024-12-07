@@ -343,6 +343,7 @@ impl<T: Item> Chain<T> {
             } else {
                 self.add_unchecked(buf.iter().cloned());
             }
+            buf.pop_front();
         }
 
         if edges.has_end() {
