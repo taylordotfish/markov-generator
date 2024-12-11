@@ -12,48 +12,55 @@
  * may be distributed only in accordance with markov-generator's license.
  */
 
-use markov_generator::{AddEdges, Chain};
+use markov_generator::{AddEdges, HashChain};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::iter;
+use std::io::{self, BufRead, BufReader, BufWriter, Write};
 
-fn main() {
+fn main() -> io::Result<()> {
     const DEPTH: usize = 6;
     // Maps each sequence of 6 items to a list of possible next items.
-    let mut chain = Chain::new(DEPTH);
+    // `HashChain` uses hash maps internally; b-trees can also be used.
+    let mut chain = HashChain::new(DEPTH);
 
     // In this case, corpus.txt contains one paragraph per line.
-    let file = File::open("examples/corpus.txt").unwrap();
+    let file = File::open("examples/corpus.txt")?;
     let mut reader = BufReader::new(file);
     let mut line = String::new();
-    let mut prev_line = String::new();
+    // The previous `DEPTH` characters before `line`.
+    let mut prev = Vec::<char>::new();
 
     while let Ok(1..) = reader.read_line(&mut line) {
         // `Both` means that the generated random output could start with the
-        // beginning of `line`, and that the generated output could end after
-        // the end of `line`.
+        // beginning of `line` or end after the end of `line`.
         chain.add_all(line.chars(), AddEdges::Both);
-
-        // Starting index of last `DEPTH` chars in `prev_line`.
-        let prev_tail =
-            prev_line.char_indices().nth_back(DEPTH - 1).map_or(0, |(i, _)| i);
 
         // This makes sure there's a chance that the end of the previous line
         // could be followed by the start of the current line when generating
         // random output.
         chain.add_all(
-            prev_line[prev_tail..].chars().chain(line.chars().take(DEPTH)),
+            prev.iter().copied().chain(line.chars().take(DEPTH)),
             AddEdges::Neither,
         );
 
-        std::mem::swap(&mut line, &mut prev_line);
+        if let Some((n, (i, _c))) =
+            line.char_indices().rev().enumerate().take(DEPTH).last()
+        {
+            // Keep only the most recent `DEPTH` characters.
+            prev.drain(0..prev.len().saturating_sub(DEPTH - n - 1));
+            prev.extend(line[i..].chars());
+        }
         line.clear();
     }
 
     // Generate and print random Markov data.
-    let output: String = chain
-        .generate()
-        .flat_map(|c| iter::repeat(c).take(1 + (*c == '\n') as usize))
-        .collect();
-    print!("{}", &output[..output.len() - 1]);
+    let mut stdout = BufWriter::new(io::stdout().lock());
+    let mut prev_newline = false;
+    for &c in chain.generate() {
+        if prev_newline {
+            writeln!(stdout)?;
+        }
+        prev_newline = c == '\n';
+        write!(stdout, "{c}")?;
+    }
+    stdout.flush()
 }

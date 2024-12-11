@@ -1,10 +1,10 @@
 [package]
 name = "markov-generator"
-version = "0.1.6"
+version = "0.2.0"
 edition = "2021"
-rust-version = "1.62"
-description = """Highly customizable crate for building Markov chains and \
-    generating data from them"""
+rust-version = "1.65"
+description = """Highly customizable library for building Markov chains and \
+    generating random data"""
 documentation = "https://docs.rs/markov-generator"
 readme = "misc/crate-readme.md"
 repository = "https://github.com/taylordotfish/markov-generator"
@@ -13,9 +13,8 @@ keywords = ["markov", "markov-chain", "markov-text", "random", "serialize"]
 categories = ["data-structures", "no-std", "text-processing"]
 
 [features]
-default = ["serde", "std", "hash"]
+default = ["serde", "std"]
 std = ["serde?/std", "rand/std", "rand/std_rng"]
-hash = ["std"]
 doc_cfg = []
 
 [dependencies.rand]
